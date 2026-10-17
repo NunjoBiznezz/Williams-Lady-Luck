@@ -51,6 +51,14 @@ PLACEMENTS = os.path.join(FOLDER, "playfield placements.csv")
 OUT = os.path.join(FOLDER, "Lady Luck playfield.svg")
 HOLE_LIST = os.path.join(FOLDER, "Lady Luck hole list.csv")
 CONTROLS_CSV = os.path.join(FOLDER, "playfield controls.csv")
+PIECE_DIRS = ["", "stencils"]   # where pieces are looked for, in order (main folder, then stencils/)
+
+def find_piece(fn):
+    """path of a piece named in placements.csv: main folder first, then stencils/"""
+    for d in PIECE_DIRS:
+        p = os.path.join(FOLDER, d, fn)
+        if os.path.exists(p): return p
+    return os.path.join(FOLDER, fn)
 UNDERLAY = "images/playfield aligned 150ppi.jpg"
 
 U = 300.0                     # units per inch
@@ -200,7 +208,7 @@ def main():
     placed = 0
     for r in rows:
         if r.get("include", "yes").strip().lower() not in ("yes", "y", "1", "true"): continue
-        fn = r["file"].strip(); src = os.path.join(FOLDER, fn)
+        fn = r["file"].strip(); src = find_piece(fn)
         if not os.path.exists(src): print("  missing:", fn); continue
         ox = float(r["origin_x_in"]) * U
         oy = (BOARD_H - float(r["origin_y_in"])) * U
