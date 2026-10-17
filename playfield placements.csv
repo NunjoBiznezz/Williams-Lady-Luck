@@ -1,0 +1,32 @@
+file,origin_x_in,origin_y_in,rotation_deg,include,method,hole_check_rms_in,note
+playfield background.svg,0.0000,42.0000,0.000,yes,drawn in board coordinates,n/a (drawn in place),"yellow/teal rays, green rings, ring + lobe keylines (first row = bottom of each colour layer)"
+playfield cream preview.svg,0.0000,42.0000,0.000,yes,made from the pieces (preview only),n/a,PREVIEW ONLY - cream base under the pieces; remake after adding pieces
+UC pop bumper with 100 rollover.svg,5.3049,39.1187,-1.850,yes,art fit to photo,0.069 (15 holes),
+UL slingshot.svg,0.8093,36.1292,0.200,yes,art fit to photo,0.045 (9 holes),
+UR slingshot.svg,14.4161,36.2355,0.250,yes,art fit to photo,0.045 (11 holes),
+UL lamp strip.svg,0.7776,28.7103,-0.500,yes,art fit to photo,0.018 (4 holes),
+UR lamp strip.svg,17.0557,28.6868,0.600,yes,art fit to photo,0.033 (3 holes),
+UL pop bumper.svg,2.4035,29.5029,0.900,yes,art fit to photo,n/a (<3 holes found),sits in CL by the grid
+CC pop bumper.svg,6.7199,28.3967,-0.600,yes,art fit to photo,0.017 (6 holes),
+UR pop bumper.svg,11.1557,29.4752,0.800,yes,art fit to photo,n/a (<3 holes found),sits in CR by the grid
+CL advance card rollover.svg,2.0373,25.2383,-0.250,yes,art fit to photo,n/a (<3 holes found),
+CR advance card rollover.svg,14.1533,25.2133,0.000,yes,art fit to photo,n/a (<3 holes found),
+CL saucer joker.svg,0.6600,22.6733,0.000,yes,art fit to photo,n/a (<3 holes found),left saucer (yellow)
+CR saucer joker.svg,13.5133,22.6400,0.000,yes,art fit to photo,n/a (<3 holes found),right saucer (teal)
+CR lamp strip.svg,0.8038,24.7115,-0.350,yes,art fit to photo,0.037 (7 holes),left saucer strip (file name says CR)
+CL lamp strip.svg,16.4351,24.7290,1.700,yes,art fit to photo,0.050 (5 holes),right saucer strip (file name says CL)
+LL card value when lit.svg,0.6301,15.7648,-0.100,yes,art fit to photo,n/a (no holes layer),left CARD VALUE WHEN LIT + 100 lane (faded paint on the board; no holes layer)
+LR card value when lit.svg,15.8972,15.7318,-0.650,yes,art fit to photo,n/a (no holes layer),right CARD VALUE WHEN LIT + 100 lane (no holes layer)
+UL queen lane.svg,3.8737,36.4820,0.300,yes,art fit to photo,n/a (1 hole),
+UR king lane.svg,12.6628,36.4871,0.400,yes,art fit to photo,n/a (1 hole),
+LC card fan.svg,3.3429,20.1474,0.200,yes,art fit to photo,n/a (inserts only),
+LC lady luck girl.svg,7.6101,13.4393,-0.750,yes,art fit to photo,n/a (no holes layer),bottom girl (traced art; no holes layer)
+LR slingshot.svg,12.4000,13.5500,0.000,yes,drawn in board coordinates,n/a (drawn in place),lower right sling (built from the whole-board photo)
+LL slingshot.svg,1.7000,13.6000,0.000,yes,drawn in board coordinates,n/a (drawn in place),lower left sling (mirror of LR fitted to the visible border; upper part faded)
+LC same player shoots again.svg,7.0000,9.4000,0.000,yes,drawn in board coordinates,n/a (drawn in place),SPSA apron (built from the whole-board photo)
+CC advance card hex.svg,7.6500,15.8000,0.000,yes,drawn in board coordinates,n/a (drawn in place),ADVANCE CARD hexagon (built from the whole-board photo)
+CC ace 1 card point.svg,7.2500,23.3000,0.000,yes,drawn in board coordinates,n/a (drawn in place),ACE / 1 CARD POINT arrow (built from the whole-board photo)
+LC red girl.svg,5.6000,16.2500,0.000,yes,traced in board coordinates,n/a (drawn in place),red-haired girl in the circle (traced from red girl.xcf close-up)
+LC blue girl.svg,10.0500,17.3500,0.000,yes,traced in board coordinates,n/a (drawn in place),blue-haired girl in the circle (traced from blue girl.xcf close-up)
+CL dancing girl.svg,4.8500,24.5000,0.000,yes,traced in board coordinates,n/a (drawn in place),green-haired dancing girl (traced from the whole-board photo)
+CC standing girl.svg,11.2500,24.5000,0.000,yes,traced in board coordinates,n/a (drawn in place),standing girl in red trousers (traced from the whole-board photo)
