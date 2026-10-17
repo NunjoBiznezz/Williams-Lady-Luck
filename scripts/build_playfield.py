@@ -32,6 +32,7 @@ Output layers (bottom to top)
                           "playfield cream preview.svg" (locked; for looking only)
   yellow, green, teal, blue, red, black   one layer per paint colour; each piece is a
                           group named after its file
+  inserts (preview - no cut)  insert / rollover plastics, from the cream preview file
   holes (registration)    every piece's holes/posts, one group per piece
   centerlines (reference) centre lines of the pieces that have them (hidden)
   controls (reference)    control points from "playfield controls.csv" (+ the hole list if
@@ -131,6 +132,7 @@ def layer_kind(lab):
     if "hole" in l: return "holes"
     if "centerline" in l or "centre" in l: return "centerlines"
     if l.startswith("cream"): return "cream"
+    if l.startswith("inserts"): return "inserts"
     for c in COLOUR_ORDER:
         if l.startswith(c): return c
     return None
@@ -189,6 +191,8 @@ def main():
     cream = layer(svg, "cream", "cream (preview - no cut)")
     cream.set("{%s}insensitive" % SOD, "true")
     colour_layers = {c: layer(svg, c, c) for c in COLOUR_ORDER}
+    inserts = layer(svg, "inserts", "inserts (preview - no cut)")
+    inserts.set("{%s}insensitive" % SOD, "true")
     holes = layer(svg, "holes", "holes (registration)")
     cl = layer(svg, "centerlines", "centerlines (reference)", style="display:none")
 
@@ -204,7 +208,7 @@ def main():
         name = fn[:-4] if fn.lower().endswith(".svg") else fn
         pre = slug(name) + "_"
         for kind, lays in read_piece(src).items():
-            dest = holes if kind == "holes" else cl if kind == "centerlines" else cream if kind == "cream" else \
+            dest = holes if kind == "holes" else cl if kind == "centerlines" else cream if kind == "cream" else inserts if kind == "inserts" else \
                 (bg_layers if "background" in name.lower() else colour_layers)[kind]
             g = ET.SubElement(dest, "{%s}g" % SVG, {"id": pre + kind, "{%s}label" % INK: name})
             for lay in lays:
@@ -236,7 +240,7 @@ def main():
         print("  hole list: %d points" % k)
 
     ET.ElementTree(svg).write(OUT, encoding="utf-8", xml_declaration=True)
-    for g in list(bg_layers.values()) + list(colour_layers.values()) + [cream]:
+    for g in list(bg_layers.values()) + list(colour_layers.values()) + [cream, inserts]:
         if len(g) == 0: svg.remove(g)
     print("wrote %s (%d pieces)" % (os.path.basename(OUT), placed))
 
