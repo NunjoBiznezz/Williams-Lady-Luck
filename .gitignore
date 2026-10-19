@@ -1,3 +1,5 @@
 .DS_Store
 .venv/
 _previous/
+# make_stencils.py outputs (area stencil / area mask / border stencil) - remake from the source SVG
+_generated/

@@ -4,7 +4,10 @@ make_stencils.py - Lady Luck playfield stencil generator
 =========================================================
 
 Reads a source SVG that has a "centerline" layer (the centre of the keyline
-around a painted area) and writes cut-ready SVG files next to it:
+around a painted area) and writes cut-ready SVG files into a _generated folder in the directory the
+script is run from (run it from the project root, so the outputs land in
+./_generated/, beside scripts/). _generated is in .gitignore: these files are
+throw-away outputs - remake them from the source instead of editing them.
 
   <name> - area stencil.svg    film with the area cut out (paint the area colour,
                                e.g. cream). The piece that drops out of this cut
@@ -27,14 +30,20 @@ Source SVG conventions (300 units = 1 inch)
 -------------------------------------------
   <g id="centerline" data-width="0.06in">  one closed path per area; data-width is
                                            the painted keyline width
+                                           a path may have its own data-width (nested
+                                           keylines of another width, e.g. a card)
+                                           a closed path with id "noborder..." marks a
+                                           region with no border (keyline stops there,
+                                           e.g. under a saucer ring); it is not an area
   <g id="holes">  registration marks: groups "postN" (11/32in outline + screw hole)
                   and paths "holeN"
 
 Usage
 -----
-  python scripts/make_stencils.py "UL slingshot.svg"
-  python scripts/make_stencils.py "UL slingshot.svg" --overlap 0.005
-  python scripts/make_stencils.py "UL slingshot.svg" --area-grow 0.01 --only area
+  (from the project root)
+  python scripts/make_stencils.py "stencils/UL slingshot.svg"
+  python scripts/make_stencils.py "stencils/UL slingshot.svg" --overlap 0.005
+  python scripts/make_stencils.py "stencils/UL slingshot.svg" --area-grow 0.01 --only area
 
 Options (all in inches)
   --width W        keyline width (default: data-width in the file, else 0.06)
@@ -46,7 +55,7 @@ Options (all in inches)
   --windows LIST   comma list of hole ids to use as windows, or "none"
                    (default: every round hole >= --min-window inside the area; posts never)
   --only area|mask|border   make just one of the outputs
-  --outdir DIR     where to write (default: next to the source)
+  --outdir DIR     where to write (default: _generated in the current directory)
 
 Needs: Python 3.9+, numpy, shapely  (pip install numpy shapely)
 """
@@ -264,6 +273,12 @@ def geom_to_d(g):
 def buf(g, d):
     return g.buffer(d, join_style=1, quad_segs=64) if abs(d) > 1e-9 else g
 
+def band_of(pg, half):
+    """keyline band = centre line +/- half. Mitre joins, so sharp tips stay sharp
+    (round joins cut the point off a banner tip); curves are many small segments,
+    so they come out the same as before."""
+    return pg.buffer(half, join_style=2, mitre_limit=10).difference(pg.buffer(-half, join_style=2, mitre_limit=10))
+
 # ----------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description='Make area stencil, area mask and border stencil from a centerline SVG.')
@@ -288,9 +303,16 @@ def main():
         m = re.match(r'([\d.]+)\s*(in)?', cl.get('data-width', '') or '')
         width = float(m.group(1)) if m else 0.06
     M0 = layer_matrix(root, cl)
-    areas = []
+    areas = []; noborder = []; lines = []        # lines: (polygon, keyline width in inches)
     for _id, _e, rings in shapes_in(cl, M0):
-        for r in rings: areas.append(Polygon(r).buffer(0))
+        for r in rings:
+            # a closed path whose id starts with "noborder" is not an area: no border is
+            # painted inside it (e.g. where a saucer ring sits on top of the keyline)
+            if _id.lower().startswith('noborder'): noborder.append(Polygon(r).buffer(0)); continue
+            pg = Polygon(r).buffer(0); areas.append(pg)
+            # a path may carry its own data-width (e.g. a card outline inside an arrow)
+            pm = re.match(r'([\d.]+)\s*(in)?', _e.get('data-width', '') or '')
+            lines.append((pg, float(pm.group(1)) if (pm and a.width is None) else width))
     if not areas: sys.exit('The centerline layer has no closed paths.')
     area = unary_union(areas)
 
@@ -325,7 +347,8 @@ def main():
         return ' '.join([d] + inner), k + 4 * len(inner), shape
 
     stem = os.path.splitext(os.path.basename(a.svg))[0]
-    outdir = a.outdir or os.path.dirname(os.path.abspath(a.svg))
+    outdir = a.outdir or os.path.join(os.getcwd(), '_generated')
+    os.makedirs(outdir, exist_ok=True)
     vb = root.get('viewBox'); wid = root.get('width'); hei = root.get('height')
     # reference copy of the registration marks for every output
     # (built from a copy - the source file is never changed). Each loose hole path is
@@ -361,7 +384,8 @@ def main():
         print(f'  {os.path.basename(fn)}: {nodes} nodes')
         return fn
 
-    print(f'{a.svg}: keyline {width}in, {len(windows)} alignment window(s)')
+    ws = sorted({round(w, 4) for _, w in lines}) or [width]
+    print(f'{a.svg}: keyline {", ".join(str(w) for w in ws)}in, {len(windows)} alignment window(s)')
     if a.only in (None, 'area'):
         d, k, _ = with_windows(buf(area, a.area_grow * U))
         write('area stencil', d, k, f'Area = centre line grown {a.area_grow}in. The piece that drops out is the area mask.', '#f6e39c')
@@ -370,8 +394,11 @@ def main():
         write('area mask', d, k, f'Mask = centre line grown {a.mask_grow}in.', '#f6e39c')
     if a.only in (None, 'border'):
         half = (width / 2 + a.overlap) * U
-        band = buf(area, half).difference(buf(area, -half))
-        island = buf(area, -half)
+        # every centre line gets its own band (nested lines, e.g. a card inside an
+        # arrow or a ring inside a banner, each keep their keyline at their own width)
+        band = unary_union([band_of(pg, (w / 2 + a.overlap) * U) for pg, w in lines])
+        if noborder: band = band.difference(unary_union(noborder))
+        island = area.difference(band)
         d, k = geom_to_d(band)
         inner = []
         for cx, cy, r in windows:
