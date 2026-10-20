@@ -101,3 +101,6 @@ keep them in place.
 
 Options (inches): `--mask-grow -0.005`, `--mark-offset 0.20`, `--mark-size 0.25`,
 `--window 0.0625` (0 = no window), `--outdir DIR`. The source SVG is never changed.
+
+## Trim lines (layer "trim (cut only)" in the source)
+Straight cut-only lines for trimming the film where a piece meets a neighbour (first use: UL/UR pop bumpers where they meet the CC pop bumper). Draw them in the source SVG in a layer whose label starts with "trim" - one straight path per line (only its first and last points are used; absolute or relative coordinates both work). make_layer_stencils.py runs each line out to the sheet edges, adds it to the "cut" layer of every sheet as `trim-line-N` (blue stroke, never painted), reports whether it crosses any artwork, and picks the 3 registration marks from the 4 corners so they all stay on the artwork side. build_playfield.py ignores the trim layer. If you move a trim line in Inkscape, keep it free of transforms (no transform on the layer or path).
