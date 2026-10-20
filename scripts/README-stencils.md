@@ -68,3 +68,36 @@ stays sharp and covers the painted point. Rounded corners come out the same as b
 `noborder` paths are used for: the card face (the banner line runs behind the card), the
 saucer face inside the ring, and two small caps where the banner line meets the ring with a
 square end (so no round bump sticks out past the ring).
+
+## make_layer_stencils.py - flat-colour artwork (the girls)
+For art drawn with one layer per paint colour (e.g. `stencils/CL dancing girl.svg`: green, blue,
+red, black + the hidden "area (reference - no cut)" outline). No centerline layer needed.
+
+```
+cd ~/Documents/Pinball/Williams/Lady\ Luck
+bash scripts/layer_stencils.sh "stencils/CL dancing girl.svg"
+```
+(uses the same `~/.venvs/stencils` environment as stencils.sh)
+
+Writes to `_generated/`, numbered in paint order:
+
+| File | Use |
+|---|---|
+| `<name> - 1 area mask.svg` | Cut out the figure outline; the piece that drops out is the mask. Stick it on the figure (over the cream base), paint the background, peel it off. Shrunk 0.005in so the background tucks under the black outline. |
+| `<name> - 2 green stencil.svg` ... | One per colour layer, in the file's layer order. Openings copied exactly from the source (same nodes). |
+| `<name> - N black stencil.svg` | Black is always last. |
+
+Every file has the same 3 registration marks outside the art (top-left, top-right, bottom-left -
+not symmetric, so a sheet can't go on flipped):
+- layer **cut**: the openings + a small round window (1/16in) at each mark
+- layer **pen (Tool 2) - registration**: a cross at each mark, for the pen in Tool 2
+- layer **outline (reference - no cut)**: the figure outline, just for orientation
+
+Lining up: put a small piece of masking tape under each mark, lay the first sheet (area mask) in
+place, dot each tape through its window with a fine pencil. Every later sheet goes on with its
+windows over the dots. The script reports "loose film islands" (e.g. the face inside the black
+stencil): those pieces of film are inside an opening, so lift the stencil with transfer tape to
+keep them in place.
+
+Options (inches): `--mask-grow -0.005`, `--mark-offset 0.20`, `--mark-size 0.25`,
+`--window 0.0625` (0 = no window), `--outdir DIR`. The source SVG is never changed.
