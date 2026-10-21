@@ -25,6 +25,13 @@ It goes into the "cut" layer of EVERY sheet as "trim-line-N" (blue stroke): cut 
 painted, to trim the film where this piece meets a neighbour (e.g. UL/UR pop bumpers along
 the CC pop bumper circle, and the two straight edges of the ADVANCE CARD banner notch).
 The marks are then picked from the four corners so all three stay on the artwork side.
+The area mask sheet gets no trim lines: the mask is the piece cut out on its own outline.
+
+Alignment windows (area mask only): every hole in the source's "holes (registration)" layer
+that lies inside the mask (posts never; holes at least --min-window across) is cut as a
+window --window-margin smaller than the hole all round, same shape (circles stay 4-node
+circles, the saturn-shaped bumper centre hole stays saturn-shaped). Lay the mask on the
+board with each window centred over its hole. Pieces without a holes layer are unchanged.
 
 Lining up: stick a bit of masking tape under each mark window, put the first sheet
 (the area mask) in place, and dot each tape through its window with a fine pencil.
@@ -37,12 +44,15 @@ the background runs a hair under the figure's black outline), using a node-prese
 offset, so it keeps the outline's node count.
 
 Run (from the project root):
-    bash scripts/layer_stencils.sh "stencils/CL dancing girl.svg"
+    bash scripts/stencils.sh "stencils/CL dancing girl.svg"
 Options (inches):
     --mask-grow -0.005   grow (+) or shrink (-) the area mask
     --mark-offset 0.20   distance of the marks outside the artwork
     --mark-size 0.25     length of each cross arm-to-arm
     --window 0.0625      diameter of the cut window at each mark (0 = none)
+    --window-margin 0.02 area mask hole windows: this much smaller than the hole all round
+    --min-window 0.15    area mask hole windows: smallest hole (across) that gets one
+    --windows none       no hole windows in the area mask
     --outdir DIR         default: ./_generated
 Needs: Python 3.9+, numpy, shapely
 """
@@ -252,25 +262,106 @@ def _run_on(seg, at_start, box):
     Q = P + _ray_exit(P, out_dir, box) * out_dir
     return ([np.array([P, Q])] if np.linalg.norm(Q - P) > 1e-6 else []), Q
 
+def split_subpaths(d):
+    """path data -> list of standalone subpath strings (each starts with an absolute M, so a
+    subpath can be kept or dropped on its own; the rest of its commands are copied as written)"""
+    toks = re.findall(r'[A-Za-z]|[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?', d)
+    NARGS = dict(M=2, L=2, H=1, V=1, C=6, S=4, Q=4, T=2, A=7, Z=0)
+    subs = []; cur = None; pos = [0.0, 0.0]; start = [0.0, 0.0]; i = 0; cmd = None
+    fmt = lambda v: ('%.4f' % v).rstrip('0').rstrip('.')
+    while i < len(toks):
+        if re.match(r'[A-Za-z]', toks[i]): cmd = toks[i]; i += 1
+        C = cmd.upper(); rel = cmd != C; n = NARGS[C]
+        if C == 'Z':
+            if cur is not None: cur.append(cmd)
+            pos = start[:]; continue
+        v = [float(x) for x in toks[i:i + n]]; i += n
+        if C == 'M':
+            x, y = (pos[0] + v[0], pos[1] + v[1]) if rel else (v[0], v[1])
+            cur = [f'M{fmt(x)},{fmt(y)}']; subs.append(cur); pos = [x, y]; start = [x, y]
+            cmd = 'l' if rel else 'L'; continue
+        cur.append(cmd + ' '.join(fmt(t) for t in v))
+        if C == 'H': pos[0] = pos[0] + v[0] if rel else v[0]
+        elif C == 'V': pos[1] = pos[1] + v[0] if rel else v[0]
+        else:
+            x, y = v[-2], v[-1]; pos = [pos[0] + x, pos[1] + y] if rel else [x, y]
+    return [' '.join(c) for c in subs]
+
+def keyline_band(root):
+    """the border-stencil band of a centerline file (centre line +/- half the keyline width),
+    the same band make_stencils.py cuts, or None if there is no centerline layer"""
+    import make_stencils as MS
+    from shapely.ops import unary_union
+    cl = MS.find_layer(root, 'centerline')
+    if cl is None: return None
+    m = re.match(r'([\d.]+)', cl.get('data-width', '') or ''); width = float(m.group(1)) if m else 0.06
+    lines = []; nob = []
+    for _id, e, rings in MS.shapes_in(cl, MS.layer_matrix(root, cl)):
+        for r in rings:
+            pg = Polygon(r).buffer(0)
+            if _id.lower().startswith('noborder'): nob.append(pg); continue
+            pm = re.match(r'([\d.]+)', e.get('data-width', '') or '')
+            lines.append((pg, float(pm.group(1)) if pm else width))
+    if not lines: return None
+    band = unary_union([MS.band_of(pg, w / 2 * U) for pg, w in lines])
+    return band.difference(unary_union(nob)) if nob else band
+
 # ----------------------------------------------------------------- main
-def main():
+KIND = 'flat-colour layers: one stencil per paint layer (+ area mask if there is an "area" layer)'
+
+def paint_layers(root):
+    """labels of the layers that would become stencils (same rules as main)"""
+    out = []
+    for g in root.iter(f'{{{SVG_NS}}}g'):
+        if g.get(f'{{{INK}}}groupmode') != 'layer': continue
+        lab = (g.get(f'{{{INK}}}label') or g.get('id') or '').strip()
+        if not any(p.get('d') for p in g.iter(f'{{{SVG_NS}}}path')): continue
+        if lab.lower().startswith(('area', 'trim')) or any(w in lab.lower() for w in SKIP): continue
+        out.append(lab)
+    return out
+
+def applies(root):
+    """True if this source SVG has paint layers (red, blue, black ...)"""
+    return bool(paint_layers(root))
+
+def has_centerline(root):
+    return any(g.get('id') == 'centerline' or (g.get(f'{{{INK}}}label') or '').lower().startswith('centerline')
+               for g in root.iter(f'{{{SVG_NS}}}g'))
+
+def build_parser():
     ap = argparse.ArgumentParser(description='One stencil per colour layer + area mask, with shared registration marks.')
     ap.add_argument('svg')
     ap.add_argument('--mask-grow', type=float, default=-0.005)
     ap.add_argument('--mark-offset', type=float, default=0.20)
     ap.add_argument('--mark-size', type=float, default=0.25)
     ap.add_argument('--window', type=float, default=0.0625)
+    ap.add_argument('--window-margin', type=float, default=0.02)
+    ap.add_argument('--min-window', type=float, default=0.15)
+    ap.add_argument('--windows', default=None, help='"none" = no hole windows in the area mask')
     ap.add_argument('--outdir')
-    a = ap.parse_args()
+    ap.add_argument('--except-keyline', action='store_true',
+                    help='file also has a centerline: leave out the keyline edges (the border stencil paints them)')
+    return ap
+
+def main(argv=None):
+    a = build_parser().parse_args(argv)
 
     root = ET.parse(a.svg).getroot()
-    layers = []; area = None; trim_src = []
+    layers = []; area = None; trim_src = []; hole_src = []
     for g in root.iter(f'{{{SVG_NS}}}g'):
         if g.get(f'{{{INK}}}groupmode') != 'layer': continue
         lab = (g.get(f'{{{INK}}}label') or g.get('id') or '').strip()
         paths = [p for p in g.iter(f'{{{SVG_NS}}}path') if p.get('d')]
         if not paths: continue
         if lab.lower().startswith('area'): area = paths; continue
+        if lab.lower().startswith('holes'):
+            in_post = {id(q) for grp in g.iter(f'{{{SVG_NS}}}g') if (grp.get('id') or '').lower().startswith('post')
+                       for q in grp.iter(f'{{{SVG_NS}}}path')}
+            for p in paths:
+                pid = p.get('id') or ''
+                if id(p) in in_post or pid.lower().startswith('post') or p.get('transform'): continue
+                hole_src.append((p.get(f'{{{INK}}}label') or pid or 'hole', p.get('d')))
+            continue
         if lab.lower().startswith('trim'):
             if g.get('transform') or any(p.get('transform') for p in paths):
                 print('  WARNING: trim layer/path has a transform - apply it in Inkscape (Path > Object to Path / ungroup) so the line is in file units')
@@ -288,6 +379,43 @@ def main():
         layers.append((lab, fill, paths))
     if not layers: sys.exit('no colour layers found')
     layers.sort(key=lambda L: L[0].lower() == 'black')          # black always last
+
+    if a.except_keyline:
+        # the file also has a centerline: make_stencils.py's border stencil paints the keyline,
+        # so leave out the parts of a layer that ARE keyline: a filled piece of the layer that lies
+        # inside the keyline band, and the subpaths that outline it. (Colour areas whose edges run
+        # under a keyline are kept - only shapes that are the band itself go.) Subpaths are kept or
+        # dropped whole - nothing is booleaned, nodes stay as drawn.
+        from make_stencils import path_to_rings
+        from shapely.geometry import LineString
+        from shapely.ops import unary_union
+        band = keyline_band(root)
+        if band is not None:
+            near = band.buffer(2.0)
+            kept_layers = []
+            for lab, fill, paths in layers:
+                poly = evenodd_poly(' '.join(p.get('d') for p in paths))
+                comps = [c for c in getattr(poly, 'geoms', [poly]) if c.area > 1.0]
+                key = [c for c in comps if c.difference(near).area < 0.02 * c.area]
+                if not key: kept_layers.append((lab, fill, paths)); continue
+                key_edges = unary_union([c.boundary for c in key]).buffer(1.5)
+                new_paths = []; dropped = 0
+                for i, p in enumerate(paths):
+                    keep = []; before = dropped
+                    for sub in split_subpaths(p.get('d')):
+                        rings = [r for r in path_to_rings(sub) if len(r) > 2]
+                        lines = [LineString(list(r) + [r[0]]) for r in rings]
+                        if lines and all(L.difference(key_edges).length < 0.02 * L.length for L in lines): dropped += 1
+                        else: keep.append(sub)
+                    if keep and dropped == before: new_paths.append(p)          # untouched: keep it exactly as drawn
+                    elif keep:
+                        new_paths.append(ET.Element(f'{{{SVG_NS}}}path', {'id': p.get('id') or f'{lab}-{i + 1}', 'd': ' '.join(keep)}))
+                if dropped: print(f'  {lab}: {dropped} keyline outline(s) left out (painted by the border stencil)')
+                if new_paths: kept_layers.append((lab, fill, new_paths))
+                else: print(f'  {lab}: only keyline - no stencil needed (the border stencil paints it)')
+            layers = kept_layers
+        if not layers:
+            print('  nothing to paint outside the keyline - no colour stencils'); return
 
     # geometry for bounds / reporting
     geo = {lab: evenodd_poly(' '.join(p.get('d') for p in ps)) for lab, _, ps in layers}
@@ -374,15 +502,18 @@ def main():
     outline = (f'<g inkscape:groupmode="layer" id="outline" inkscape:label="outline (reference - no cut)">'
                f'<path fill="none" stroke="#999" stroke-width="0.6" stroke-dasharray="4 3" d="{area_d}"/></g>\n') if area_d else ''
 
-    def write(step, kind, cut_paths, nodes, note, colour, pieces):
+    def write(step, kind, cut_paths, nodes, note, colour, pieces, with_trims=True, extra=()):
         fn = os.path.join(outdir, f'{stem} - {step} {kind}.svg')
         cut = '\n'.join(f'<path id="{pid}" fill="{colour}" fill-opacity="0.45" fill-rule="evenodd" stroke="#000" stroke-width="0.8" d="{d}"/>'
                         for pid, d in cut_paths)
-        for i, (lab, dd, _) in enumerate(trims):
+        for i, (lab, dd, _) in enumerate(trims if with_trims else []):
             cut += (f'\n<path id="trim-line-{i + 1}" inkscape:label="{lab} (cut, no paint)" fill="none" '
                     f'stroke="#0070c0" stroke-width="1.2" d="{dd}"/>')
         cut += '\n' + '\n'.join(f'<path id="mark{i + 1}-window" inkscape:label="mark {i + 1} window" fill="none" stroke="#000" stroke-width="0.8" d="{w}"/>'
                                 for i, w in enumerate(windows))
+        for wid, wlab, wd in extra:
+            cut += (f'\n<path id="{wid}" inkscape:label="{wlab}" fill="#fff" fill-rule="evenodd" '
+                    f'stroke="#000" stroke-width="0.8" d="{wd}"/>')
         svg = (f'<?xml version="1.0" encoding="UTF-8"?>\n'
                f'<svg xmlns="{SVG_NS}" xmlns:inkscape="{INK}" width="{vw / U:.4f}in" height="{vh / U:.4f}in" '
                f'viewBox="{vx:.2f} {vy:.2f} {vw:.2f} {vh:.2f}">\n'
@@ -409,9 +540,29 @@ def main():
         else:   # fall back: plain buffer
             from make_stencils import geom_to_d, buf
             md, nodes = geom_to_d(buf(apoly, a.mask_grow * U))
+        # alignment windows over the holes inside the mask
+        extra = []
+        if a.windows != 'none':
+            mpoly = evenodd_poly(md)
+            for k, (hlab, hd) in enumerate(hole_src):
+                hs = parse_abs(hd)
+                if not hs or len(hs) != 1: continue
+                hp = evenodd_poly(hd)
+                if hp.is_empty: continue
+                x0, y0, x1, y1 = hp.bounds
+                if min(x1 - x0, y1 - y0) < a.min_window * U - 1e-6: continue
+                w = offset_subpath(hs[0], -a.window_margin * U, lambda q: hp.contains(Point(q)))
+                wd = write_abs([w])
+                wp = evenodd_poly(wd)
+                if wp.is_empty or not mpoly.buffer(-0.02 * U).contains(wp): continue
+                extra.append((f'window-{len(extra) + 1}', f'window over {hlab} ({a.window_margin}in smaller)', wd))
+                nodes += len(w)
+        win = (f', {len(extra)} alignment window(s) over holes: ' + ', '.join(e[1].split(' (')[0][len('window over '):] for e in extra)) if extra else ''
         write(step, 'area mask', [('area-mask', md)], nodes,
               f'Area outline grown {a.mask_grow}in. Cut it out and keep the piece that drops out: that is the mask '
-              f'(stick it on the figure, paint the background, peel it off).', '#f6e39c', 'one mask piece')
+              f'(stick it on the figure, paint the background, peel it off).' +
+              (' The white windows inside it are cut out of the mask: centre each one over its hole in the board.' if extra else ''),
+              '#f6e39c', 'one mask piece' + win, with_trims=False, extra=extra)
         step += 1
     else:
         print('  (no "area" layer - no mask made)')

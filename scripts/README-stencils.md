@@ -1,5 +1,56 @@
 # Stencil scripts (Lady Luck)
 
+## One command: make_all_stencils.py (run with stencils.sh)
+```
+cd ~/Documents/Pinball/Williams/Lady\ Luck
+bash scripts/stencils.sh                               # every source SVG in stencils/
+bash scripts/stencils.sh "stencils/UL pop bumper.svg"  # just this one
+bash scripts/stencils.sh --dry-run                     # list what would be made, make nothing
+```
+It looks at the layers of each source SVG and calls the right generator. Each kind of
+stencil keeps its own script (below); make_all_stencils.py only decides and calls them:
+
+| The SVG has | Generator | Makes |
+|---|---|---|
+| a `centerline` layer | make_stencils.py | area stencil, area mask, border stencil |
+| paint layers (red, blue, black ...) | make_layer_stencils.py | one stencil per paint layer (black last); `1 area mask` if there is an `area` layer; trim lines from a `trim` layer |
+| both | both | the bordered set **and** a numbered stencil for each colour (see below) |
+| (whole folder only) | make_green_rings.py | LC green rings sheets, from Lady Luck playfield.svg |
+
+**Pieces with a centerline and colours** (e.g. UC pop bumper with 100 rollover, UL queen lane, the
+saucer jokers, card fan): the colour stencils are run with `--except-keyline`. Any filled piece of a
+paint layer that lies inside the keyline band (centre line +/- half its width) is left out, with the
+subpaths that outline it, because the border stencil paints it; a layer that is only keyline (the
+blue on the lamp strips and slingshots) gets no colour stencil. Colour areas whose edges run under a
+keyline are kept whole. Subpaths are kept or dropped whole, never booleaned, so the nodes stay as
+drawn. Where black outlines are joined to other black shapes (e.g. card outlines and their shadows
+in the card fan) they stay in the black stencil too - same colour, so painting them twice is harmless.
+Suggested order: area stencil (base colour), colour stencils 1, 2, 3 ..., border stencil last.
+
+Layers that are never stencils: anything labelled reference / no cut, holes, centerline,
+photo, grid, pen; `area` only makes the mask; `trim` only adds cut lines.
+Not sources (skipped, list at the top of make_all_stencils.py): the old `* suits.svg` copies,
+`insert masks letter.svg` and `UL slingshot white mask.svg` (already cut sheets), and the green
+rings pieces file (made by make_green_rings.py). A file with neither a centerline nor paint
+layers is reported as skipped.
+
+Before a piece is made, its old sheets in `_generated` (`<name> - *.svg`) are removed, so
+nothing stale is left from an earlier numbering (`--keep-old` keeps them).
+Generator options can go on the same line; each generator only gets the ones it knows
+(`--overlap` -> make_stencils.py, `--mark-offset` -> make_layer_stencils.py, `--mask-grow` -> both).
+At the end it prints what was made, what was skipped and why, and anything that failed.
+`layer_stencils.sh` still works (same as stencils.sh). The individual scripts can still be run
+on their own, e.g. `python3 scripts/make_stencils.py "stencils/UL slingshot.svg"`.
+
+### Covers (area masks) with alignment windows
+A piece with a hidden `area (reference - no cut)` layer gets `<name> - 1 area mask.svg`: the
+cover you stick on the element while you spray the background. If the piece has a
+`holes (registration)` layer, every hole inside the cover (posts never, holes at least 0.15in
+across) is cut out of it as a window 0.02in smaller all round, same shape (the pop bumpers get
+their saturn centre hole and the two big round holes): centre each window over its hole.
+The mask sheet carries no trim lines. Options: `--window-margin 0.02`, `--min-window 0.15`,
+`--windows none`. The UL/UR/CC pop bumper covers end on the middle of the outer black line.
+
 ## make_stencils.py
 Makes the three cut files for a painted area with a keyline (border) around it.
 They are written to a `_generated` folder in the directory you run the script from
@@ -22,7 +73,7 @@ with the registration marks (`postN` groups and `holeN` paths).
 cd ~/Documents/Pinball/Williams/Lady\ Luck
 bash scripts/stencils.sh "stencils/UL slingshot.svg"
 ```
-The first run sets up its own small Python environment in `~/.venvs/stencils`
+(stencils.sh runs make_all_stencils.py, which sends a centerline file here.) The first run sets up its own small Python environment in `~/.venvs/stencils`
 (needs internet once, takes a minute). After that it runs offline. Each Mac gets its
 own copy, so it doesn't matter that the project folder syncs between them.
 (The project's `.venv` folder was made on the Mac mini and points at that Mac's paths,
@@ -75,9 +126,9 @@ red, black + the hidden "area (reference - no cut)" outline). No centerline laye
 
 ```
 cd ~/Documents/Pinball/Williams/Lady\ Luck
-bash scripts/layer_stencils.sh "stencils/CL dancing girl.svg"
+bash scripts/stencils.sh "stencils/CL dancing girl.svg"
 ```
-(uses the same `~/.venvs/stencils` environment as stencils.sh)
+(stencils.sh sends a file with paint layers and no centerline here)
 
 Writes to `_generated/`, numbered in paint order:
 

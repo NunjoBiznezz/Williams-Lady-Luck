@@ -280,7 +280,14 @@ def band_of(pg, half):
     return pg.buffer(half, join_style=2, mitre_limit=10).difference(pg.buffer(-half, join_style=2, mitre_limit=10))
 
 # ----------------------------------------------------------------- main
-def main():
+KIND = 'bordered area (centerline layer): area stencil, area mask, border stencil'
+
+def applies(root):
+    """True if this source SVG is a bordered area: it has a centerline layer with a path in it"""
+    cl = find_layer(root, 'centerline')
+    return cl is not None and any(e.get('d') for e in cl.iter(f'{{{SVG_NS}}}path'))
+
+def build_parser():
     ap = argparse.ArgumentParser(description='Make area stencil, area mask and border stencil from a centerline SVG.')
     ap.add_argument('svg')
     ap.add_argument('--width', type=float)
@@ -292,7 +299,10 @@ def main():
     ap.add_argument('--windows', default=None)
     ap.add_argument('--only', choices=['area', 'mask', 'border'])
     ap.add_argument('--outdir')
-    a = ap.parse_args()
+    return ap
+
+def main(argv=None):
+    a = build_parser().parse_args(argv)
 
     ET.register_namespace('', SVG_NS); ET.register_namespace('inkscape', INK)
     tree = ET.parse(a.svg); root = tree.getroot()
