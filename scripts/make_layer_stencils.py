@@ -18,11 +18,13 @@ Every file has the SAME registration marks, outside the artwork:
   layer "outline (reference - no cut)" the figure outline, for orientation only
 
 Trim lines: a layer in the source whose label starts with "trim" (e.g. "trim (cut only)")
-holds straight lines (each path: first point to last point). Each is run out to the sheet
-edges and added to the "cut" layer of EVERY sheet as "trim-line-N" (blue stroke): cut
-only, never painted, to trim the film where this piece meets a neighbour (e.g. UL/UR pop
-bumpers where they meet the CC pop bumper). The marks are then picked from the four
-corners so all three stay on the artwork side of every trim line.
+holds cut-only lines - straight, polyline or curved (lines, arcs and curves, absolute or
+relative, as Inkscape writes them). Each path is cut exactly as drawn, and its two open ends
+run on to the sheet edges in the same shape: straight ends straight, curved ends round their circle.
+It goes into the "cut" layer of EVERY sheet as "trim-line-N" (blue stroke): cut only, never
+painted, to trim the film where this piece meets a neighbour (e.g. UL/UR pop bumpers along
+the CC pop bumper circle, and the two straight edges of the ADVANCE CARD banner notch).
+The marks are then picked from the four corners so all three stay on the artwork side.
 
 Lining up: stick a bit of masking tape under each mark window, put the first sheet
 (the area mask) in place, and dot each tape through its window with a fine pencil.
@@ -123,21 +125,132 @@ def evenodd_poly(d):
         if len(r) > 2: acc = acc.symmetric_difference(Polygon(r).buffer(0))
     return acc
 
-def line_ends(d):
-    """first and last point of a path made of M/L/H/V commands (absolute or relative, as Inkscape writes them)"""
-    pos = np.zeros(2); first = None
-    for cmd, args in re.findall(r'([MmLlHhVvZz])([^MmLlHhVvZz]*)', d):
-        v = [float(x) for x in re.findall(r'[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?', args)]
-        if cmd in 'Mm' or cmd in 'Ll':
-            for i in range(0, len(v) - 1, 2):
-                q = np.array(v[i:i + 2]); pos = q if cmd in 'ML' or (cmd == 'm' and first is None and i == 0) else pos + q
-                if first is None: first = pos.copy()
-        elif cmd in 'Hh':
-            for x in v: pos = np.array([x, pos[1]]) if cmd == 'H' else pos + [x, 0]
-        elif cmd in 'Vv':
-            for y in v: pos = np.array([pos[0], y]) if cmd == 'V' else pos + [0, y]
-    if re.search(r'[^MmLlHhVvZz\s\d.,eE+-]', d) or first is None or np.linalg.norm(pos - first) < 1e-6: return None
-    return first, pos
+def _arc_to_cubics(p0, rx, ry, phi, fa, fs, p1):
+    """SVG elliptical arc -> list of cubic segments (each <= 90 deg)"""
+    if np.allclose(p0, p1): return []
+    rx, ry = abs(rx), abs(ry)
+    if rx < 1e-9 or ry < 1e-9: return [np.array([p0, p1])]
+    c, s_ = math.cos(phi), math.sin(phi)
+    d = (p0 - p1) / 2; x1 = c * d[0] + s_ * d[1]; y1 = -s_ * d[0] + c * d[1]
+    lam = x1 * x1 / (rx * rx) + y1 * y1 / (ry * ry)
+    if lam > 1: rx *= math.sqrt(lam); ry *= math.sqrt(lam)
+    num = rx * rx * ry * ry - rx * rx * y1 * y1 - ry * ry * x1 * x1
+    co = math.sqrt(max(0.0, num / (rx * rx * y1 * y1 + ry * ry * x1 * x1)))
+    if fa == fs: co = -co
+    cx1, cy1 = co * rx * y1 / ry, -co * ry * x1 / rx
+    ctr = np.array([c * cx1 - s_ * cy1, s_ * cx1 + c * cy1]) + (p0 + p1) / 2
+    ang = lambda ux, uy: math.atan2(uy, ux)
+    t0 = ang((x1 - cx1) / rx, (y1 - cy1) / ry); t1 = ang((-x1 - cx1) / rx, (-y1 - cy1) / ry)
+    dt = t1 - t0
+    if fs and dt < 0: dt += 2 * math.pi
+    if not fs and dt > 0: dt -= 2 * math.pi
+    n = max(1, int(math.ceil(abs(dt) / (math.pi / 2) - 1e-9))); h = dt / n; k = 4 / 3 * math.tan(h / 4)
+    E = lambda t: ctr + np.array([c * rx * math.cos(t) - s_ * ry * math.sin(t), s_ * rx * math.cos(t) + c * ry * math.sin(t)])
+    dE = lambda t: np.array([-c * rx * math.sin(t) - s_ * ry * math.cos(t), -s_ * rx * math.sin(t) + c * ry * math.cos(t)])
+    out = []
+    for i in range(n):
+        a_, b_ = t0 + i * h, t0 + (i + 1) * h
+        out.append(np.array([E(a_), E(a_) + k * dE(a_), E(b_) - k * dE(b_), E(b_)]))
+    out[0][0] = p0; out[-1][-1] = p1
+    return out
+
+def trim_paths(d):
+    """any SVG path (M L H V C S Q T A Z, absolute or relative) -> list of open subpaths,
+    each a list of segments (2 points = line, 4 points = cubic), absolute coordinates"""
+    toks = re.findall(r'[A-Za-z]|[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?', d)
+    i = 0; cmd = None; pos = np.zeros(2); start = np.zeros(2); subs = []; cur = None; lastc = None
+    def num():
+        nonlocal i; v = float(toks[i]); i += 1; return v
+    def pt(rel):
+        p = np.array([num(), num()]); return p + pos if rel else p
+    while i < len(toks):
+        if re.match(r'[A-Za-z]', toks[i]): cmd = toks[i]; i += 1
+        rel = cmd.islower(); C = cmd.upper()
+        if C == 'Z':
+            if cur is not None and np.linalg.norm(pos - start) > 1e-6: cur.append(np.array([pos, start.copy()]))
+            pos = start.copy(); lastc = None; continue
+        if C == 'M':
+            p = pt(rel); cur = []; subs.append(cur); pos = p; start = p.copy(); cmd = 'l' if rel else 'L'; lastc = None; continue
+        if C == 'L': p = pt(rel); cur.append(np.array([pos, p])); pos = p; lastc = None
+        elif C == 'H': x = num(); p = np.array([x + (pos[0] if rel else 0), pos[1]]); cur.append(np.array([pos, p])); pos = p; lastc = None
+        elif C == 'V': y = num(); p = np.array([pos[0], y + (pos[1] if rel else 0)]); cur.append(np.array([pos, p])); pos = p; lastc = None
+        elif C == 'C':
+            c1 = pt(rel); c2 = pt(rel); p = pt(rel); cur.append(np.array([pos, c1, c2, p])); pos = p; lastc = c2
+        elif C == 'S':
+            c1 = 2 * pos - lastc if lastc is not None else pos.copy(); c2 = pt(rel); p = pt(rel)
+            cur.append(np.array([pos, c1, c2, p])); pos = p; lastc = c2
+        elif C in 'QT':
+            q = pt(rel) if C == 'Q' else (2 * pos - lastc if lastc is not None else pos.copy())
+            p = pt(rel); cur.append(np.array([pos, pos + 2 / 3 * (q - pos), p + 2 / 3 * (q - p), p])); pos = p; lastc = q
+        elif C == 'A':
+            rx, ry, rot, fa, fs = num(), num(), num(), num(), num(); p = pt(rel)
+            cur += _arc_to_cubics(pos, rx, ry, math.radians(rot), int(fa), int(fs), p); pos = p; lastc = None
+    return [sp for sp in subs if sp]
+
+def _bez(g, n=24):
+    if len(g) == 2: return [g[0], g[1]]
+    t = np.linspace(0, 1, n + 1)[:, None]
+    return list((1 - t) ** 3 * g[0] + 3 * (1 - t) ** 2 * t * g[1] + 3 * (1 - t) * t * t * g[2] + t ** 3 * g[3])
+
+def _end_dir(g, at_start):
+    """unit direction pointing OUT of the path at its start (backwards) or end (forwards)"""
+    if at_start:
+        for q in g[1:]:
+            v = g[0] - q
+            if np.linalg.norm(v) > 1e-9: return v / np.linalg.norm(v)
+    else:
+        for q in g[-2::-1]:
+            v = g[-1] - q
+            if np.linalg.norm(v) > 1e-9: return v / np.linalg.norm(v)
+    return None
+
+def _ray_exit(P, v, box):
+    """distance along ray P + t v (t >= 0) to where it leaves the box (x0, y0, x1, y1)"""
+    ts = []
+    for k, lo, hi in ((0, box[0], box[2]), (1, box[1], box[3])):
+        if abs(v[k]) > 1e-12: ts.append(max((lo - P[k]) / v[k], (hi - P[k]) / v[k]))
+    return max(0.0, min(ts)) if ts else 0.0
+
+def _run_on(seg, at_start, box):
+    """continue a trim path past one of its open ends to the sheet edge, in the same curve:
+    a straight end runs on straight, a curved end runs on round the circle it lies on.
+    Returns (list of segments going outward from the end, end point at the sheet edge)."""
+    P = seg[0] if at_start else seg[-1]
+    out_dir = _end_dir(seg, at_start)
+    if out_dir is None: return [], P
+    if len(seg) == 4:
+        b = _bez(seg, 2)                                   # start, middle, end of the curve
+        A, M, B = b[0], b[1], b[2]
+        den = 2 * (A[0] * (M[1] - B[1]) + M[0] * (B[1] - A[1]) + B[0] * (A[1] - M[1]))
+        if abs(den) > 1e-6 * max(1.0, np.linalg.norm(B - A)) ** 2:
+            sq = lambda q: q @ q
+            C = np.array([sq(A) * (M[1] - B[1]) + sq(M) * (B[1] - A[1]) + sq(B) * (A[1] - M[1]),
+                          sq(A) * (B[0] - M[0]) + sq(M) * (A[0] - B[0]) + sq(B) * (M[0] - A[0])]) / den
+            r = np.linalg.norm(P - C)
+            if r < 50 * U:                                 # a real curve, not a near-straight line
+                t0 = math.atan2(P[1] - C[1], P[0] - C[0])
+                # turn direction: the one whose tangent at P points outward
+                sgn = 1 if np.dot(np.array([-math.sin(t0), math.cos(t0)]), out_dir) > 0 else -1
+                inside = lambda t: (box[0] <= C[0] + r * math.cos(t) <= box[2]) and (box[1] <= C[1] + r * math.sin(t) <= box[3])
+                step = math.radians(0.25); t = 0.0
+                while t < math.pi and inside(t0 + sgn * (t + step)): t += step
+                if t >= math.pi: return [], P                # circle stays on the sheet: leave the end as it is
+                lo, hi = t, t + step
+                for _ in range(40):
+                    mid = (lo + hi) / 2
+                    if inside(t0 + sgn * mid): lo = mid
+                    else: hi = mid
+                dt = sgn * hi
+                n = max(1, int(math.ceil(abs(dt) / (math.pi / 2))))
+                h = dt / n; k = 4 / 3 * math.tan(h / 4)
+                E = lambda a: C + r * np.array([math.cos(a), math.sin(a)])
+                D = lambda a: r * np.array([-math.sin(a), math.cos(a)])
+                segs = [np.array([E(t0 + i * h), E(t0 + i * h) + k * D(t0 + i * h),
+                                  E(t0 + (i + 1) * h) - k * D(t0 + (i + 1) * h), E(t0 + (i + 1) * h)]) for i in range(n)]
+                segs[0][0] = P
+                return segs, segs[-1][-1]
+    Q = P + _ray_exit(P, out_dir, box) * out_dir
+    return ([np.array([P, Q])] if np.linalg.norm(Q - P) > 1e-6 else []), Q
 
 # ----------------------------------------------------------------- main
 def main():
@@ -162,9 +275,11 @@ def main():
             if g.get('transform') or any(p.get('transform') for p in paths):
                 print('  WARNING: trim layer/path has a transform - apply it in Inkscape (Path > Object to Path / ungroup) so the line is in file units')
             for p in paths:
-                ends = line_ends(p.get('d'))
-                if ends: trim_src.append(((p.get(f'{{{INK}}}label') or p.get('id') or 'trim').strip(), *ends))
-                else: print(f'  WARNING: trim path {p.get("id")} skipped - draw it as straight line segment(s)')
+                lab_p = (p.get(f'{{{INK}}}label') or p.get('id') or 'trim').strip()
+                subs = trim_paths(p.get('d'))
+                if not subs: print(f'  WARNING: trim path {p.get("id")} has no segments - skipped')
+                for k, sp in enumerate(subs):
+                    trim_src.append((lab_p if len(subs) == 1 else f'{lab_p} part {k + 1}', sp))
             continue
         if any(w in lab.lower() for w in SKIP): continue
         fill = '#888'
@@ -189,25 +304,65 @@ def main():
     vx, vy = minx - off - pad, miny - off - pad
     vw, vh = (maxx - minx) + 2 * (off + pad), (maxy - miny) + 2 * (off + pad)
 
-    # trim lines (source layer "trim ..."): straight cut lines run out to the sheet edges
-    trims = []
-    for lab, P, Q in trim_src:
-        dv = Q - P; ts = []
-        for k, lo, hi in ((0, vx, vx + vw), (1, vy, vy + vh)):
-            if abs(dv[k]) > 1e-9: ts += [(lo - P[k]) / dv[k], (hi - P[k]) / dv[k]]
-        ok = [t for t in ts if vx - 1e-6 <= (P + t * dv)[0] <= vx + vw + 1e-6 and vy - 1e-6 <= (P + t * dv)[1] <= vy + vh + 1e-6]
-        trims.append((lab, P + min(ok) * dv, P + max(ok) * dv))
+    # trim lines (source layer "trim ..."): cut exactly as drawn; open ends run straight on to the sheet edges
+    from shapely.geometry import LineString, box as sbox
+    from shapely.ops import polygonize, unary_union
+    sheet = (vx, vy, vx + vw, vy + vh)
+    trims = []        # (label, path d, sampled polyline)
+    art_region = sbox(*sheet)
+    for lab, sp in trim_src:
+        P0, P1 = sp[0][0], sp[-1][-1]
+        d0, d1 = _end_dir(sp[0], True), _end_dir(sp[-1], False)
+        closed = np.linalg.norm(P1 - P0) < 1e-6
+        head, E0 = ([], P0) if closed else _run_on(sp[0], True, sheet)
+        tail, E1 = ([], P1) if closed else _run_on(sp[-1], False, sheet)
+        head = [g[::-1] for g in head[::-1]]               # run from the sheet edge in to P0
+        full = head + list(sp) + tail
+        dd = f'M{E0[0]:.2f},{E0[1]:.2f}'
+        pts = [E0]
+        for g in full:
+            dd += (f' L{g[1][0]:.2f},{g[1][1]:.2f}' if len(g) == 2 else
+                   ' C%.2f,%.2f %.2f,%.2f %.2f,%.2f' % tuple(g[1:].ravel()))
+            pts += _bez(g)[1:]
+        # directions at the sheet edge, for pushing the split line just past it
+        d0 = _end_dir(full[0], True) if full else d0
+        d1 = _end_dir(full[-1], False) if full else d1
+        line = LineString([tuple(q) for q in pts])
+        trims.append((lab, dd, line))
+        # the art side of this trim: split the sheet by the line (ends pushed just past the edges)
+        if not closed:
+            ext = LineString([tuple(E0 + 2 * d0)] + [tuple(q) for q in pts] + [tuple(E1 + 2 * d1)])
+            parts = list(polygonize(unary_union([sbox(*sheet).exterior, ext])))
+            if len(parts) > 1:
+                keep = max(parts, key=lambda q: q.intersection(allg).area)
+                art_region = art_region.intersection(keep)
     def art_side(pt, clear=0.0):
-        c = np.array(allg.representative_point().coords[0])
-        for _, A, B in trims:
-            side = lambda q: (B[0] - A[0]) * (q[1] - A[1]) - (B[1] - A[1]) * (q[0] - A[0])
-            dist = abs(side(pt)) / np.linalg.norm(B - A)
-            if side(pt) * side(c) <= 0 or dist < clear: return False
-        return True
+        q = Point(pt)
+        return art_region.contains(q) and all(t[2].distance(q) >= clear for t in trims)
     marks = [c for c in corners if art_side(c, h + wr)][:3]
     if len(marks) < 3:
-        print('  WARNING: trim lines leave fewer than 3 clear corners for marks; using the default corners')
-        marks = corners[:3]
+        # trims cut off corners: pick 3 points round the mark rectangle (same offset from the art),
+        # spread as far apart as possible, triangle with unequal sides so a sheet can't go on flipped
+        x0, y0, x1, y1 = minx - off, miny - off, maxx + off, maxy + off
+        cand = []
+        for k in range(17):
+            f = k / 16
+            cand += [(x0 + f * (x1 - x0), y0), (x0 + f * (x1 - x0), y1), (x0, y0 + f * (y1 - y0)), (x1, y0 + f * (y1 - y0))]
+        cand = [c for c in dict.fromkeys(cand) if art_side(c, h + wr)]
+        best = None
+        from itertools import combinations
+        for A, B, C in combinations(cand, 3):
+            l = sorted([math.dist(A, B), math.dist(B, C), math.dist(A, C)])
+            if l[1] - l[0] < 0.1 * U or l[2] - l[1] < 0.1 * U: continue      # keep it lopsided
+            area = abs((B[0] - A[0]) * (C[1] - A[1]) - (C[0] - A[0]) * (B[1] - A[1])) / 2
+            if best is None or area > best[0]: best = (area, [A, B, C])
+        if best:
+            marks = best[1]
+            print('  trim lines cut off the corners: marks moved along the sheet edges to ' +
+                  ', '.join(f'({x / U:.2f}, {y / U:.2f}) in' for x, y in marks))
+        else:
+            print('  WARNING: trim lines leave no room for 3 marks; using the default corners')
+            marks = corners[:3]
     pen = '\n'.join(f'<path id="mark{i + 1}" inkscape:label="mark {i + 1}" fill="none" stroke="#c00" stroke-width="1" '
                     f'd="M{x - h:.2f},{y:.2f} L{x + h:.2f},{y:.2f} M{x:.2f},{y - h:.2f} L{x:.2f},{y + h:.2f}"/>'
                     for i, (x, y) in enumerate(marks))
@@ -223,9 +378,9 @@ def main():
         fn = os.path.join(outdir, f'{stem} - {step} {kind}.svg')
         cut = '\n'.join(f'<path id="{pid}" fill="{colour}" fill-opacity="0.45" fill-rule="evenodd" stroke="#000" stroke-width="0.8" d="{d}"/>'
                         for pid, d in cut_paths)
-        for i, (lab, A, B) in enumerate(trims):
+        for i, (lab, dd, _) in enumerate(trims):
             cut += (f'\n<path id="trim-line-{i + 1}" inkscape:label="{lab} (cut, no paint)" fill="none" '
-                    f'stroke="#0070c0" stroke-width="1.2" d="M{A[0]:.2f},{A[1]:.2f} L{B[0]:.2f},{B[1]:.2f}"/>')
+                    f'stroke="#0070c0" stroke-width="1.2" d="{dd}"/>')
         cut += '\n' + '\n'.join(f'<path id="mark{i + 1}-window" inkscape:label="mark {i + 1} window" fill="none" stroke="#000" stroke-width="0.8" d="{w}"/>'
                                 for i, w in enumerate(windows))
         svg = (f'<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -241,10 +396,9 @@ def main():
 
     print(f'{a.svg}: {len(layers)} colour layer(s), art {(maxx - minx) / U:.2f} x {(maxy - miny) / U:.2f} in, '
           f'sheet {vw / U:.2f} x {vh / U:.2f} in, {len(marks)} marks')
-    from shapely.geometry import LineString
-    for i, (lab, A, B) in enumerate(trims):
-        x = LineString([tuple(A), tuple(B)]).intersection(allg).length / U
-        print(f'  trim line {i + 1} ({lab}): {np.linalg.norm(B - A) / U:.2f} in' + (f'  WARNING: crosses {x:.3f} in of artwork' if x > 0.005 else ', clear of the artwork'))
+    for i, (lab, dd, line) in enumerate(trims):
+        x = line.intersection(allg.buffer(-1.0)).length / U   # running along an art edge is fine
+        print(f'  trim line {i + 1} ({lab}): {line.length / U:.2f} in' + (f'  WARNING: crosses {x:.3f} in of artwork' if x > 0.005 else ', clear of the artwork'))
     step = 1
     if area_d:
         subs = parse_abs(area_d)
@@ -264,7 +418,7 @@ def main():
     for lab, fill, ps in layers:
         cps = [(p.get('id') or f'{lab}-{i + 1}', p.get('d')) for i, p in enumerate(ps)]
         nodes = sum(len(re.findall(r'[LCAQSHVTlcaqshvt]', d)) for _, d in cps)
-        g = geo[lab]; polys = list(getattr(g, 'geoms', [g]))
+        g = geo[lab]; polys = [q for q in getattr(g, 'geoms', [g]) if q.area > 0.001 * U * U]   # ignore hairline slivers
         holes = sum(len(p.interiors) for p in polys if p.geom_type == 'Polygon')
         pieces = f'{len(polys)} opening(s)' + (f', {holes} loose film island(s) inside openings - keep them on transfer tape' if holes else '')
         write(step, f'{lab} stencil', cps, nodes, f'Paint {lab} through the openings.', fill, pieces)
