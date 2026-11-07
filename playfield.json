@@ -1,0 +1,20 @@
+{
+  "name": "Lady Luck",
+  "board_w_in": 20.3125,
+  "board_h_in": 42.0,
+  "art_centre_x_in": 9.20,
+  "underlay": "images/playfield aligned 150ppi.jpg",
+  "not_sources": {
+    "* suits.svg": "old suit-only copy; the suits are now in the pop bumper file itself",
+    "insert masks letter.svg": "already a cut sheet",
+    "UL slingshot white mask.svg": "already a cut sheet"
+  },
+  "game_steps": [
+    {
+      "name": "LC green rings",
+      "script": "game_scripts/make_green_rings.py",
+      "source": "LC green rings stencil pieces.svg",
+      "needs": "Lady Luck playfield.svg"
+    }
+  ]
+}

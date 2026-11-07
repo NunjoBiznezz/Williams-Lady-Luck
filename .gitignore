@@ -3,3 +3,6 @@
 _previous/
 # make_stencils.py outputs (area stencil / area mask / border stencil) - remake from the source SVG
 _generated/
+__pycache__/
+_to_delete/
+*.webp

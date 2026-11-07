@@ -1,0 +1,12 @@
+
+## Playfield coordinates and hole IDs (agreed 2026-10-16)
+- Board 20-5/16 x 42in. Origin = lower-left corner of the wood (apron end, player's left). X = across, to the player's right; Y = up toward the arch. Decimal inches to hole centres.
+- Grid cells are exact thirds: columns break at X = 6.771 / 13.542, rows at Y = 14 / 28.
+- Artwork centre line is X ~ 9.20 (not the board middle, because of the shooter lane); symmetric pieces mirror about it.
+- Hole ID = `<cell>-<type><n>`, e.g. UL-P3. Types: P post, H round hole, S slot/non-round, I insert, B pop bumper, K saucer, R rollover, W small screw hole. Numbered per cell and type, bottom row upward, left to right.
+- Files: "Lady Luck hole list.csv" (188 holes; tape-measured controls plus the rest read from a straightened top-down photo, about +/-1/16-1/8in) and "Lady Luck hole map.jpg" (straightened photo, 150 px/in, labelled). Not in the Lady Luck folder as of 2026-10-16 evening.
+- Control points now live in "playfield controls.csv" in the folder (name, x_in, y_in, source); edit there.
+- Tape controls: UC bumper 9.1875, 32.9375; CL red bumper 4.8125, 26.9375; CC bumper 9.25, 25.9375; CR red bumper 13.625, 26.9375; saucers: left 1.466 / 21.330 (re-measured on the aligned photo 2026-10-16, outer rim circle fit; tape had 1.34375, 21.25), right 17.0 / 21.25 (photo suggests ~17.06 / 21.33, not changed); advance card rollovers 3.125 / 15.375 at Y 23.3125; hex rollover 9.21875, 13.9375; top rollover 9.1875, 38.125; SPSA 9.1875, 8.0; outlane slots 1.1875 / 17.15625 at Y 11.0; corner holes LL 0.15625, 3.5625; LR 20.125, 5.0625; UL 0.25, 40.8125. UR corner (36-5/16 from shooter lane bottom) not used yet.
+- By the measured grid, some older file names are in a different cell: the red bumpers ("UL/UR pop bumper") sit in CL/CR. The CARD VALUE WHEN LIT pieces are now named LL/LR.
+- Primary reference holes (small, crisp, tape-measured 2026-10-16; use these first): LL-W2 6.625, 3.5; LR-W2 15.09375, 0.53125; UL-W2 0.3125, 31.8125; UR-W9 (screw) 18.8125, 36.53125. They fit the photo to ~1/32in rms. The larger holes measured earlier (centre by eye) fit to ~3/32in rms and are kept as secondary checks.
+- Aligned photo: images/playfield aligned 150ppi.jpg = "playfield whole.png" resampled to exactly 150 px/in, (0,0) = top-left of the wood (fit to the four primary holes: 149.87 px/in, -0.07deg, 0.020in rms). Measure from it: X = px/150, Y = 42 - py/150.

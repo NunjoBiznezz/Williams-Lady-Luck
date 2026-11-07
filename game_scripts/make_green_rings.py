@@ -37,12 +37,15 @@ I_IN = (2771.10, 8387.64, 1129.83)    # inner ring, inner edge
 # outer ring ends: the green stops on the centre line of each lower sling's blue
 # border (LL / LR slingshot.svg centerline layer, moved to board units).  The ring's
 # inner edge meets the sling's long straight inner edge; its outer edge meets the
-# sling's rounded top.  So each end = straight piece + part of the top-cap cubic.
+# sling's straight edge too (since the 2026-10-21 taller tops), so each end is one straight
+# line; if it ever meets the rounded top, the end = straight piece + part of the cap cubic.
 # (straight edge: from point A up to its top point Q; cap cubic starts at Q)
-L_SLING = dict(A=(1746.12, 10111.83), Q=(834.91, 8624.44),
-               cap=((834.91, 8624.44), (813.04, 8588.74), (772.05, 8569.44), (730.59, 8575.34)))
-R_SLING = dict(A=(3788.63, 10122.72), Q=(4717.40, 8646.24),
-               cap=((4717.40, 8646.24), (4739.70, 8610.80), (4780.92, 8591.99), (4822.30, 8598.38)))
+# (2026-10-21: sling top corners re-fitted to the photo, r 105 -> 77.5; the straight
+#  edges now run higher, so the ring's outer edge meets the straight edge too)
+L_SLING = dict(A=(1746.12, 10111.83), Q=(801.71, 8570.25),
+               cap=((801.71, 8570.25), (785.56, 8543.89), (755.31, 8529.65), (724.71, 8534.01)))
+R_SLING = dict(A=(3788.63, 10122.72), Q=(4751.24, 8592.44),
+               cap=((4751.24, 8592.44), (4767.70, 8566.28), (4798.12, 8552.40), (4828.67, 8557.12)))
 
 def bez(c, t):
     (x0, y0), (x1, y1), (x2, y2), (x3, y3) = c
@@ -79,9 +82,15 @@ def sling_end(sl):
     for k in range(400, 0, -1):
         if (r_in(on_line(ts[k])) > 0) != (r_in(on_line(ts[k - 1])) > 0):
             t_in = crossing(lambda t: r_in(on_line(t)), ts[k - 1], ts[k]); break
+    e_in = on_line(t_in)
+    if r_out(Q) > 0:
+        # outer edge crosses the straight edge below the top cap: the end is one line
+        t_out = crossing(lambda t: r_out(on_line(t)), t_in, 1.0)
+        e_out = on_line(t_out)
+        return e_in, e_out, [('L', e_out)], [('L', e_in)]
     t_out = crossing(lambda t: r_out(bez(cap, t)), 0.0, 1.0)
     head = bez_head(cap, t_out)
-    e_in, e_out = on_line(t_in), head[3]
+    e_out = head[3]
     fwd = [('L', Q), ('C', head[1], head[2], head[3])]          # e_in -> e_out
     back = [('C', head[2], head[1], Q), ('L', e_in)]            # e_out -> e_in
     return e_in, e_out, fwd, back
