@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1.7200in" height="2.3133in" viewBox="0 0 516 694">
+<!-- Fan card: one card of LC card fan.svg (all 10 are identical), upright. 300 units = 1 in.
+     Centre line of the 0.02in black outline: 1.22 x 1.813in (366 x 544), corners r 16 (0.053in).
+     No holes layer on purpose: inserts are covered with the round masks from insert masks letter.svg (insert hole 0.687in, 2 units right / 7 above the card centre on every card). -->
+<g inkscape:groupmode="layer" id="centerline" inkscape:label="centerline (reference - no cut)" data-width="0.02in"><path id="centerline-card" fill="none" stroke="#00a000" stroke-width="1" d="M91.00,75.00L425.00,75.00C433.84,75.00 441.00,82.16 441.00,91.00L441.00,603.00C441.00,611.84 433.84,619.00 425.00,619.00L91.00,619.00C82.16,619.00 75.00,611.84 75.00,603.00L75.00,91.00C75.00,82.16 82.16,75.00 91.00,75.00Z"/></g>
+</svg>
