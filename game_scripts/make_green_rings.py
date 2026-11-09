@@ -42,8 +42,9 @@ I_IN = (2771.10, 8387.64, 1129.83)    # inner ring, inner edge
 # (straight edge: from point A up to its top point Q; cap cubic starts at Q)
 # (2026-10-21: sling top corners re-fitted to the photo, r 105 -> 77.5; the straight
 #  edges now run higher, so the ring's outer edge meets the straight edge too)
-L_SLING = dict(A=(1746.12, 10111.83), Q=(801.71, 8570.25),
-               cap=((801.71, 8570.25), (785.56, 8543.89), (755.31, 8529.65), (724.71, 8534.01)))
+# (2026-11-09: LL slingshot.svg is now an exact mirror of LR, so L_SLING changed with it)
+L_SLING = dict(A=(1767.78, 10114.52), Q=(805.17, 8584.24),
+               cap=((805.17, 8584.24), (788.71, 8558.08), (758.29, 8544.20), (727.74, 8548.92)))
 R_SLING = dict(A=(3788.63, 10122.72), Q=(4751.24, 8592.44),
                cap=((4751.24, 8592.44), (4767.70, 8566.28), (4798.12, 8552.40), (4828.67, 8557.12)))
 

@@ -2,13 +2,20 @@
   "name": "Lady Luck",
   "board_w_in": 20.3125,
   "board_h_in": 42.0,
-  "art_centre_x_in": 9.20,
+  "art_centre_x_in": 9.2,
   "underlay": "images/playfield aligned 150ppi.jpg",
   "not_sources": {
     "* suits.svg": "old suit-only copy; the suits are now in the pop bumper file itself",
     "insert masks letter.svg": "already a cut sheet",
     "UL slingshot white mask.svg": "already a cut sheet"
   },
+  "cream_stencils": [
+    "LC * girl.svg",
+    "CL dancing girl.svg",
+    "CR standing girl.svg",
+    "LL card value when lit.svg",
+    "LR card value when lit.svg"
+  ],
   "game_steps": [
     {
       "name": "LC green rings",
