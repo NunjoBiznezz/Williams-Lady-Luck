@@ -8,14 +8,16 @@ Those files are used to cut paint-mask stencils on a Silhouette Cameo, so each c
 can be airbrushed back onto the wood, and to print black-only waterslide decals for
 the fine line art and lettering.
 
-![The Lady Luck playfield, lit](illuminated%20PF.webp)
+<img src="images/playfield%20artwork%20preview.png" alt="The Lady Luck playfield artwork, assembled from the stencil source files" width="420">
+
+*The artwork so far, assembled from the files in `stencils/`.*
 
 ## What's in here
 
 | Folder / file | What it is |
 |---|---|
 | `stencils/` | **The source artwork.** One SVG per playfield element (pop bumpers, lanes, slingshots, saucers, the card fan, the girls ...). This is the heart of the project. |
-| `images/` | Photos of the original playfield (straightened and scaled) and the GIMP working files the artwork was drawn from. |
+| `images/` | Photos of the original playfield (straightened and scaled) and the GIMP working files the artwork was drawn from. Also `playfield artwork preview.png`, the picture at the top of this page. |
 | `Lady Luck playfield.svg` | Every piece assembled at its true position on the 20-5/16 x 42 in board. For checking fit - not for cutting. |
 | `playfield background.svg` | The background colour areas (rays, green rings, keylines), drawn in board coordinates. |
 | `playfield placements.csv` | Where each piece sits on the board (position and rotation). |
