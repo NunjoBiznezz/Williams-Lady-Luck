@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="9.2216in" height="9.2216in" viewBox="0 0 2766.48 2766.48">
+<!-- LC green ring keylines - INNER ring (both keylines), one piece. 300 units = 1in. Top-left corner = board X 4.6246, Y 18.6212 in (origin lower-left). Keylines are full circles as if nothing lay on top - trim by hand where other art covers them. Centre lines = the green ring edges (same circles as playfield background.svg / make_green_rings.py), each with its own data-width as drawn. Trim layer = the film outline (cut only). -->
+<g inkscape:groupmode="layer" id="black" inkscape:label="black">
+<path id="black-inner-ring-outer-edge" inkscape:label="inner ring - outer edge" style="fill:#12160d;fill-rule:evenodd;stroke:none" d="M2614.41,1374.63C2614.41,2055.73 2062.27,2607.87 1381.17,2607.87C700.07,2607.87 147.93,2055.73 147.93,1374.63C147.93,693.53 700.07,141.39 1381.17,141.39C2062.27,141.39 2614.41,693.53 2614.41,1374.63Z M2602.41,1374.63C2602.41,2049.10 2055.64,2595.87 1381.17,2595.87C706.70,2595.87 159.93,2049.10 159.93,1374.63C159.93,700.16 706.70,153.39 1381.17,153.39C2055.64,153.39 2602.41,700.16 2602.41,1374.63Z"/>
+<path id="black-inner-ring-inner-edge" inkscape:label="inner ring - inner edge" style="fill:#12160d;fill-rule:evenodd;stroke:none" d="M2521.05,1374.00C2521.05,2002.13 2011.85,2511.33 1383.72,2511.33C755.59,2511.33 246.39,2002.13 246.39,1374.00C246.39,745.87 755.59,236.67 1383.72,236.67C2011.85,236.67 2521.05,745.87 2521.05,1374.00Z M2506.05,1374.00C2506.05,1993.85 2003.57,2496.33 1383.72,2496.33C763.87,2496.33 261.39,1993.85 261.39,1374.00C261.39,754.15 763.87,251.67 1383.72,251.67C2003.57,251.67 2506.05,754.15 2506.05,1374.00Z"/>
+</g>
+<g inkscape:groupmode="layer" id="centerline" inkscape:label="centerline (reference - no cut)" data-width="0.05in">
+<path id="centerline-inner-ring-outer-edge" inkscape:label="inner ring - outer edge (0.040in)" data-width="0.0400in" fill="none" stroke="#00a000" stroke-width="1" d="M2608.41,1374.63C2608.41,2052.42 2058.96,2601.87 1381.17,2601.87C703.38,2601.87 153.93,2052.42 153.93,1374.63C153.93,696.84 703.38,147.39 1381.17,147.39C2058.96,147.39 2608.41,696.84 2608.41,1374.63Z"/>
+<path id="centerline-inner-ring-inner-edge" inkscape:label="inner ring - inner edge (0.050in)" data-width="0.0500in" fill="none" stroke="#00a000" stroke-width="1" d="M2513.55,1374.00C2513.55,1997.99 2007.71,2503.83 1383.72,2503.83C759.73,2503.83 253.89,1997.99 253.89,1374.00C253.89,750.01 759.73,244.17 1383.72,244.17C2007.71,244.17 2513.55,750.01 2513.55,1374.00Z"/>
+</g>
+<g inkscape:groupmode="layer" id="trim" inkscape:label="trim (cut only)">
+<path id="trim-film-outline" inkscape:label="film outline" fill="none" stroke="#0050ff" stroke-width="1" d="M2766.48,1383.24C2766.48,2147.18 2147.18,2766.48 1383.24,2766.48C619.30,2766.48 0.00,2147.18 0.00,1383.24C0.00,619.30 619.30,-0.00 1383.24,-0.00C2147.18,-0.00 2766.48,619.30 2766.48,1383.24Z"/>
+</g>
+<g inkscape:groupmode="layer" id="holes" inkscape:label="holes (registration)">
+<path id="CC-advance-card-hex_hole1" inkscape:label="hole 1 (rollover, 1-3/16in)" style="fill:none;stroke:#e0218a;stroke-width:1" d="M1562.38,1369.44C1562.38,1467.82 1482.64,1547.57 1384.26,1547.57C1285.88,1547.57 1206.13,1467.82 1206.13,1369.44C1206.13,1271.06 1285.88,1191.32 1384.26,1191.32C1482.64,1191.32 1562.38,1271.06 1562.38,1369.44Z"/>
+</g>
+</svg>

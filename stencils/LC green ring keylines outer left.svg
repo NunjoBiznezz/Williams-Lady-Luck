@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="7.1005in" height="14.2067in" viewBox="0 0 2130.15 4262.00">
+<!-- LC green ring keylines - OUTER ring, LEFT half (both keylines). The two halves butt on the vertical line through the ring centre (board X 9.2338in), which falls under the 1 CARD POINT panel at the top and the SAME PLAYER apron at the bottom. 300 units = 1in. Top-left corner = board X 2.1333, Y 21.1133 in (origin lower-left). Keylines are full circles as if nothing lay on top - trim by hand where other art covers them. Centre lines = the green ring edges (same circles as playfield background.svg / make_green_rings.py), each with its own data-width as drawn. Trim layer = the film outline (cut only). -->
+<g inkscape:groupmode="layer" id="black" inkscape:label="black">
+<path id="black-outer-ring-outer-edge" inkscape:label="outer ring - outer edge" style="fill:#12160d;fill-rule:evenodd;stroke:none" d="M2130.15,159.01C1422.49,158.85 768.52,536.28 414.65,1149.10C60.77,1761.92 60.77,2517.00 414.65,3129.82C768.52,3742.64 1422.49,4120.07 2130.15,4119.91L2130.15,4104.01C1428.17,4104.17 779.45,3729.77 428.42,3121.87C77.38,2513.97 77.38,1764.95 428.42,1157.05C779.45,549.15 1428.17,174.75 2130.15,174.91Z"/>
+<path id="black-outer-ring-inner-edge" inkscape:label="outer ring - inner edge" style="fill:#12160d;fill-rule:evenodd;stroke:none" d="M2130.15,268.90C1101.99,269.16 268.64,1102.72 268.64,2130.88C268.64,3159.04 1101.99,3992.60 2130.15,3992.86L2130.15,3977.86C1110.27,3977.60 283.64,3150.76 283.64,2130.88C283.64,1111.00 1110.27,284.16 2130.15,283.90Z"/>
+</g>
+<g inkscape:groupmode="layer" id="centerline" inkscape:label="centerline (reference - no cut)" data-width="0.05in">
+<path id="centerline-outer-ring-outer-edge" inkscape:label="outer ring - outer edge (0.053in)" data-width="0.0530in" fill="none" stroke="#00a000" stroke-width="1" d="M4102.19,2139.46C4102.19,3228.84 3219.07,4111.96 2129.69,4111.96C1040.31,4111.96 157.19,3228.84 157.19,2139.46C157.19,1050.08 1040.31,166.96 2129.69,166.96C3219.07,166.96 4102.19,1050.08 4102.19,2139.46Z"/>
+<path id="centerline-outer-ring-inner-edge" inkscape:label="outer ring - inner edge (0.050in)" data-width="0.0500in" fill="none" stroke="#00a000" stroke-width="1" d="M3985.10,2130.88C3985.10,3155.08 3154.82,3985.36 2130.62,3985.36C1106.42,3985.36 276.14,3155.08 276.14,2130.88C276.14,1106.68 1106.42,276.40 2130.62,276.40C3154.82,276.40 3985.10,1106.68 3985.10,2130.88Z"/>
+<path id="noborder-other-half" inkscape:label="noborder: other half (on the other part)" fill="none" stroke="#a0a0a0" stroke-width="1" d="M2130.15,-300.00L7130.15,-300.00L7130.15,4562.00L2130.15,4562.00Z"/>
+</g>
+<g inkscape:groupmode="layer" id="trim" inkscape:label="trim (cut only)">
+<path id="trim-film-outline" inkscape:label="film outline" fill="none" stroke="#0050ff" stroke-width="1" d="M2130.15,0.43C953.72,0.69 0.17,954.45 0.17,2130.88C0.17,3307.31 953.72,4261.07 2130.15,4261.33L2130.15,3827.86C1193.12,3827.60 433.64,3067.91 433.64,2130.88C433.64,1193.85 1193.12,434.16 2130.15,433.90Z"/>
+</g>
+<g inkscape:groupmode="layer" id="holes" inkscape:label="holes (registration)">
+<g id="LL-slingshot_post1" inkscape:label="LL slingshot post 1">
+<path id="LL-slingshot_post1-outline" inkscape:label="post1-outline" style="fill:none;stroke:#e0218a;stroke-width:1" d="M1092.16,3869.50C1092.16,3841.02 1069.08,3817.94 1040.60,3817.94C1012.12,3817.94 989.04,3841.02 989.04,3869.50C989.04,3897.98 1012.12,3921.06 1040.60,3921.06C1069.08,3921.06 1092.16,3897.98 1092.16,3869.50Z"/>
+<path id="LL-slingshot_post1-screw" inkscape:label="post1-screw" style="fill:none;stroke:#e0218a;stroke-width:1" d="M1044.60,3869.50C1044.60,3867.29 1042.81,3865.50 1040.60,3865.50C1038.39,3865.50 1036.60,3867.29 1036.60,3869.50C1036.60,3871.71 1038.39,3873.50 1040.60,3873.50C1042.81,3873.50 1044.60,3871.71 1044.60,3869.50Z"/>
+</g>
+<g id="LL-slingshot_post5" inkscape:label="LL slingshot post 5">
+<path id="LL-slingshot_post5-outline" inkscape:label="post5-outline" style="fill:none;stroke:#e0218a;stroke-width:1" d="M188.56,2404.00C188.56,2375.52 165.48,2352.44 137.00,2352.44C108.52,2352.44 85.44,2375.52 85.44,2404.00C85.44,2432.48 108.52,2455.56 137.00,2455.56C165.48,2455.56 188.56,2432.48 188.56,2404.00Z"/>
+<path id="LL-slingshot_post5-screw" inkscape:label="post5-screw" style="fill:none;stroke:#e0218a;stroke-width:1" d="M141.00,2404.00C141.00,2401.79 139.21,2400.00 137.00,2400.00C134.79,2400.00 133.00,2401.79 133.00,2404.00C133.00,2406.21 134.79,2408.00 137.00,2408.00C139.21,2408.00 141.00,2406.21 141.00,2404.00Z"/>
+</g>
+<path id="LL-slingshot_hole1" inkscape:label="hole 1 (15/32)" style="fill:none;stroke:#e0218a;stroke-width:1" d="M529.85,2836.00C529.85,2797.15 498.35,2765.65 459.50,2765.65C420.65,2765.65 389.15,2797.15 389.15,2836.00C389.15,2874.85 420.65,2906.35 459.50,2906.35C498.35,2906.35 529.85,2874.85 529.85,2836.00Z"/>
+<path id="LL-slingshot_hole3" inkscape:label="hole 3 (15/32)" style="fill:none;stroke:#e0218a;stroke-width:1" d="M846.05,3345.10C846.05,3306.25 814.55,3274.75 775.70,3274.75C736.85,3274.75 705.35,3306.25 705.35,3345.10C705.35,3383.95 736.85,3415.45 775.70,3415.45C814.55,3415.45 846.05,3383.95 846.05,3345.10Z"/>
+<path id="LL-slingshot_hole4" inkscape:label="hole 4 (screw)" style="fill:none;stroke:#e0218a;stroke-width:1" d="M690.50,3412.00C690.50,3404.54 684.46,3398.50 677.00,3398.50C669.54,3398.50 663.50,3404.54 663.50,3412.00C663.50,3419.46 669.54,3425.50 677.00,3425.50C684.46,3425.50 690.50,3419.46 690.50,3412.00Z"/>
+<path id="LL-slingshot_hole5" inkscape:label="hole 5 (screw)" style="fill:none;stroke:#e0218a;stroke-width:1" d="M378.20,2900.50C378.20,2893.04 372.16,2887.00 364.70,2887.00C357.24,2887.00 351.20,2893.04 351.20,2900.50C351.20,2907.96 357.24,2914.00 364.70,2914.00C372.16,2914.00 378.20,2907.96 378.20,2900.50Z"/>
+</g>
+</svg>
